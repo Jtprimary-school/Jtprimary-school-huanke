@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>一年级换课小助手</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body { font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif; background:#f2f4f8; color:#2b2f36; padding-bottom:40px; }
+  .header { background:linear-gradient(135deg,#4a7cf6,#6a5df0); color:#fff; padding:22px 18px 18px; border-radius:0 0 22px 22px; }
+  .header h1 { font-size:22px; font-weight:700; }
+  .header .sub { font-size:13px; opacity:.92; margin-top:6px; line-height:1.5; }
+  .week-switch { display:flex; gap:8px; margin-top:12px; }
+  .week-switch button { flex:1; border:none; background:rgba(255,255,255,.22); color:#fff; padding:9px 0; border-radius:10px; font-size:14px; }
+  .week-switch button.on { background:#fff; color:#4a5ef0; font-weight:700; }
+  .date-row { display:flex; align-items:center; gap:10px; margin-top:12px; background:rgba(255,255,255,.22); border-radius:10px; padding:6px 10px; }
+  .date-row label { color:#fff; font-size:14px; flex-shrink:0; }
+  .date-row input[type=date] { flex:1; border:none; background:#fff; border-radius:8px; padding:8px 10px; font-size:15px; color:#2b2f36; font-family:inherit; }
+  .section { padding:14px 14px 0; }
+  .label { font-size:14px; font-weight:700; color:#5a6070; margin:0 2px 8px; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chip { border:1.5px solid #d8dde8; background:#fff; color:#3a4150; padding:9px 14px; border-radius:12px; font-size:15px; }
+  .chip small { display:block; font-size:10px; color:#9aa1b0; margin-top:1px; }
+  .chip.on { border-color:#4a6cf6; background:#eef2ff; color:#3a56d4; font-weight:700; }
+  .chip.on small { color:#7b8be0; }
+  .result { padding:14px; }
+  .card { background:#fff; border-radius:16px; padding:16px; margin-bottom:12px; box-shadow:0 1px 4px rgba(30,40,80,.06); }
+  .card h2 { font-size:15px; color:#5a6070; font-weight:600; margin-bottom:10px; }
+  .mylesson { display:flex; align-items:center; gap:12px; }
+  .mylesson .tag { background:#fff3e6; color:#d97a1f; font-size:12px; padding:4px 10px; border-radius:8px; font-weight:700; flex-shrink:0; }
+  .mylesson .info { font-size:16px; font-weight:700; color:#2b2f36; }
+  .ok-grid { display:flex; flex-wrap:wrap; gap:10px; }
+  .ok-item { width:calc(50% - 5px); background:#f0faf3; border:1.5px solid #bfe8cc; border-radius:12px; padding:10px 12px; }
+  .ok-item .name { font-size:17px; font-weight:700; color:#1f7a3d; }
+  .ok-item .subj { font-size:12px; color:#4d9163; margin-top:3px; line-height:1.5; }
+  .ok-item .mt { font-size:11px; color:#c07a12; background:#fff7e8; border:1px solid #f5d9a8; border-radius:8px; padding:4px 6px; margin-top:6px; line-height:1.5; }
+  .warn-red { color:#d43c3c; font-weight:700; }
+  .empty { font-size:14px; color:#9aa1b0; padding:6px 0; }
+  .footer-tip { padding:0 18px; font-size:12px; color:#a0a6b4; line-height:1.7; }
+  /* 课表弹层 */
+  .mask { position:fixed; inset:0; background:rgba(20,24,40,.5); display:none; align-items:flex-end; z-index:99; }
+  .mask.show { display:flex; }
+  .sheet { background:#fff; width:100%; border-radius:20px 20px 0 0; padding:18px 12px 26px; max-height:82vh; overflow:auto; }
+  .sheet .title { display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; }
+  .sheet .title b { font-size:17px; }
+  .sheet .title span { color:#9aa1b0; font-size:13px; }
+  table.tt { width:100%; border-collapse:collapse; font-size:11px; table-layout:fixed; }
+  table.tt th, table.tt td { border:1px solid #e4e8f0; text-align:center; padding:5px 1px; line-height:1.35; }
+  table.tt th { background:#f5f7fb; color:#6b7280; font-weight:600; }
+  table.tt td.rowh { background:#f5f7fb; color:#6b7280; }
+  table.tt td .s { font-weight:700; font-size:12px; }
+  table.tt td .c { color:#8a90a0; font-size:10px; }
+  table.tt td.cur { background:#eef4ff; }
+  table.tt td.cur .s { color:#3a56d4; }
+  table.tt td.off { opacity:.42; }
+  .close-btn { width:100%; border:none; background:#eef1f6; color:#5a6070; padding:12px; border-radius:12px; font-size:15px; margin-top:14px; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔄 一年级换课小助手</h1>
+    <div class="sub" id="weekTip"></div>
+    <div class="date-row">
+      <label for="datePick">📅 查询日期</label>
+      <input type="date" id="datePick" min="2026-09-01">
+    </div>
+    <div class="week-switch">
+      <button id="wAuto" onclick="setWeek(0)">按所选日期</button>
+      <button id="wOdd" onclick="setWeek(1)">单周课</button>
+      <button id="wEven" onclick="setWeek(2)">双周课</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">我的班级</div>
+    <div class="chips" id="clsChips"></div>
+  </div>
+
+  <div class="section">
+    <div class="label">星期</div>
+    <div class="chips" id="dayChips"></div>
+  </div>
+
+  <div class="section">
+    <div class="label">节次</div>
+    <div class="chips" id="periodChips"></div>
+  </div>
+
+  <div class="result" id="result"></div>
+
+  <div class="footer-tip">
+    规则说明：只能与<b>同教本班</b>的老师换课；对方在对应节次（按单/双周）没有课，即可沟通互换。9月1日起为第一周（单周），每7天轮换。点老师姓名可看完整课表。<br>
+    科组会时段：语文·周四上午第3、4节｜英语·周二下午第5、6节｜数学·周三下午第5、6节（这些时段该科老师虽显示可换，但可能有科组会）。<br>
+    <span class="warn-red">⚠️ 科组会日程可能存在临时调整，请与对应老师口头沟通确认。</span>
+  </div>
+
+  <div class="mask" id="mask" onclick="if(event.target===this)closeSheet()">
+    <div class="sheet">
+      <div class="title"><b id="sheetName"></b><span id="sheetWeek"></span></div>
+      <div id="sheetTable"></div>
+      <button class="close-btn" onclick="closeSheet()">关闭</button>
+    </div>
+  </div>
+
+<script>
+/* 课表数据：[星期1-5, 节次1-6, 科目, 班级, 周型0每周/1单周/2双周] */
+var T = {
+"陈韵晴":[[1,1,"班队","一(5)",0],[1,4,"语文","一(5)",0],[2,2,"语文","一(5)",0],[2,6,"道法","一(5)",0],[3,1,"语文","一(5)",0],[3,2,"语文","一(5)",0],[4,2,"语文","一(5)",0],[4,5,"道法","一(5)",0],[5,1,"语文","一(5)",0],[5,3,"语文","一(5)",0]],
+"黄慧坚":[[1,2,"心理","一(7)",1],[2,2,"心理","一(2)",1],[4,2,"心理","一(6)",1],[5,2,"心理","一(8)",1],[1,3,"心理","一(5)",1],[3,4,"心理","一(4)",1],[4,4,"心理","一(1)",1],[5,4,"综合","三(5)",0],[2,5,"综合","三(6)",0],[4,5,"综合","三(8)",0],[1,6,"综合","三(7)",0],[2,6,"心理","一(3)",1]],
+"陈妍捷":[[1,1,"班队","一(8)",0],[1,2,"语文","一(8)",0],[2,1,"语文","一(8)",0],[2,5,"语文","一(8)",0],[3,1,"语文","一(8)",0],[3,4,"道法","一(8)",0],[4,2,"语文","一(8)",0],[4,6,"道法","一(8)",0],[5,3,"语文","一(8)",0],[5,5,"语文","一(8)",0]],
+"陈瑜":[[1,1,"班队","一(3)",0],[1,4,"语文","一(3)",0],[2,1,"语文","一(3)",0],[2,2,"语文","一(3)",0],[3,2,"语文","一(3)",0],[3,5,"语文","一(3)",0],[4,1,"语文","一(3)",0],[4,5,"道法","一(3)",0],[5,1,"语文","一(3)",0],[5,6,"道法","一(3)",0]],
+"邓君":[[1,2,"英语","一(1)",0],[1,3,"科学","一(3)",0],[2,1,"英语","一(5)",0],[2,2,"英语","一(8)",0],[3,1,"英语","一(3)",0],[3,2,"科学","一(1)",0],[3,5,"科学","一(5)",0],[4,1,"英语","一(1)",0],[4,4,"英语","一(5)",0],[4,5,"科学","一(8)",0],[5,1,"英语","一(8)",0],[5,3,"英语","一(3)",0]],
+"王晓芳":[[1,3,"音乐","一(4)",0],[1,4,"音乐","二(8)",0],[1,5,"音乐","一(5)",0],[1,6,"音乐","一(7)",0],[2,3,"音乐","一(2)",0],[2,5,"音乐","二(6)",0],[2,6,"音乐","一(1)",0],[3,3,"音乐","一(8)",0],[3,4,"音乐","二(3)",0],[3,5,"音乐","二(1)",0],[3,6,"音乐","一(3)",0],[4,2,"音乐","二(4)",0],[4,4,"音乐","一(6)",0],[4,6,"音乐","二(7)",0],[5,5,"音乐","二(2)",0],[5,6,"音乐","二(5)",0]],
+"张晓":[[1,3,"美术","一(7)",0],[1,4,"美术","一(2)",0],[1,5,"美术","一(1)",0],[1,6,"美术","一(5)",0],[2,3,"美术","一(3)",0],[2,5,"美术","一(6)",0],[2,6,"美术","一(7)",0],[3,2,"美术","一(8)",0],[3,4,"美术","一(5)",0],[3,6,"美术","一(2)",0],[4,3,"美术","一(8)",0],[4,4,"美术","一(4)",0],[4,5,"美术","一(1)",0],[4,6,"美术","一(3)",0],[5,5,"美术","一(4)",0],[5,6,"美术","一(6)",0]],
+"何晓琳":[[1,3,"英语","五(6)",0],[1,4,"科学","五(7)",0],[1,6,"体育","五(7)",0],[2,2,"英语","五(7)",0],[2,4,"体育","五(6)",0],[3,1,"英语","五(6)",0],[3,2,"英语","五(7)",0],[3,6,"综合","一(8)",0],[4,1,"英语","五(7)",0],[4,2,"科学","五(6)",0],[4,3,"综合","一(1)",0],[5,2,"英语","五(6)",0]],
+"黄翔":[[1,3,"科学","一(8)",0],[1,6,"科学","二(2)",0],[3,3,"科学","一(1)",0],[3,6,"科学","二(1)",0],[4,3,"科学","二(4)",0],[4,4,"科学","二(5)",0],[4,5,"科学","一(7)",0],[5,5,"科学","一(2)",0]],
+"李文静":[[1,2,"英语","五(1)",0],[1,3,"英语","五(3)",0],[1,5,"综合","一(4)",0],[2,1,"英语","五(3)",0],[2,3,"体育","五(1)",0],[3,1,"英语","五(1)",0],[3,4,"综合","一(6)",0],[3,5,"科学","五(3)",0],[4,2,"英语","五(1)",0],[4,4,"体育","五(3)",0],[5,2,"英语","五(3)",0],[5,5,"科学","五(1)",0]],
+"吕书文":[[1,1,"班队","一(6)",0],[1,5,"语文","一(6)",0],[2,1,"语文","一(6)",0],[2,2,"语文","一(6)",0],[3,2,"语文","一(6)",0],[3,3,"语文","一(6)",0],[4,1,"语文","一(6)",0],[4,6,"道法","一(6)",0],[5,2,"语文","一(6)",0],[5,3,"道法","一(6)",0]],
+"翁美慧":[[1,1,"班队","一(4)",0],[1,4,"语文","一(4)",0],[2,1,"语文","一(4)",0],[2,5,"道法","一(4)",0],[3,2,"语文","一(4)",0],[3,5,"语文","一(4)",0],[4,1,"语文","一(4)",0],[4,2,"语文","一(4)",0],[5,1,"语文","一(4)",0],[5,6,"道法","一(4)",0]],
+"辛尚鸿":[[1,1,"班队","一(1)",0],[1,4,"数学","一(1)",0],[1,5,"数学","一(8)",0],[2,3,"数学","一(8)",0],[2,5,"道法","一(1)",0],[3,1,"数学","一(1)",0],[4,1,"数学","一(8)",0],[5,1,"数学","一(1)",0],[5,2,"道法","一(1)",0],[5,5,"劳动","一(1)",0],[5,6,"劳动","一(8)",0]],
+"许山小":[[1,2,"语文","一(2)",0],[1,3,"语文","一(2)",0],[1,6,"语文","一(1)",0],[2,1,"语文","一(1)",0],[2,2,"语文","一(1)",0],[2,5,"语文","一(2)",0],[3,1,"语文","一(2)",0],[3,4,"语文","一(1)",0],[3,5,"语文","一(1)",0],[4,1,"语文","一(2)",0],[4,2,"语文","一(1)",0],[4,6,"语文","一(2)",0],[5,2,"语文","一(2)",0],[5,3,"语文","一(1)",0]],
+"庞衍玲":[[1,2,"数学","一(5)",0],[1,6,"数学","一(2)",0],[2,3,"数学","一(5)",0],[2,5,"劳动","一(3)",0],[3,2,"数学","一(2)",0],[3,3,"数学","一(3)",0],[4,1,"数学","一(5)",0],[4,2,"数学","一(3)",0],[4,5,"劳动","一(2)",0],[5,1,"数学","一(2)",0],[5,2,"数学","一(3)",0],[5,5,"劳动","一(5)",0]],
+"许可":[[1,1,"班队","一(2)",0],[1,2,"英语","一(4)",0],[2,1,"英语","一(2)",0],[2,3,"道法","一(2)",0],[3,2,"英语","一(7)",0],[3,3,"英语","一(4)",0],[3,5,"科学","一(2)",0],[4,3,"英语","一(2)",0],[4,4,"科学","一(7)",0],[4,6,"科学","一(4)",0],[5,1,"英语","一(7)",0]],
+"叶慧杰":[[1,2,"数学","一(6)",0],[1,4,"劳动","一(7)",0],[2,1,"数学","一(7)",0],[2,2,"数学","一(4)",0],[2,6,"劳动","一(6)",0],[3,1,"数学","一(4)",0],[3,3,"数学","一(7)",0],[4,3,"劳动","一(4)",0],[4,5,"数学","一(6)",0],[5,1,"数学","一(6)",0],[5,2,"数学","一(4)",0],[5,5,"数学","一(7)",0]],
+"袁炳坤":[[1,2,"科学","三(3)",0],[1,4,"科学","三(2)",0],[1,6,"科学","一(3)",0],[2,2,"科学","三(6)",0],[2,3,"科学","三(1)",0],[2,5,"科学","三(4)",0],[2,6,"科学","三(5)",0],[3,5,"科学","三(3)",0],[3,6,"科学","一(5)",0],[4,2,"科学","三(1)",0],[4,4,"科学","三(5)",0],[5,2,"科学","三(4)",0],[5,4,"科学","三(6)",0],[5,6,"科学","三(2)",0]],
+"钟显雄":[[1,4,"体育","一(6)",0],[1,5,"体育","一(2)",0],[1,6,"体育","一(4)",0],[2,3,"体育","一(6)",0],[2,5,"体育","一(7)",0],[2,6,"体育","一(4)",0],[3,3,"体育","一(2)",0],[3,5,"体育","一(6)",0],[3,6,"体育","一(7)",0],[4,2,"体育","一(2)",0],[4,3,"体育","一(7)",0],[4,5,"体育","一(4)",0],[5,2,"体育","一(7)",0],[5,3,"体育","一(4)",0],[5,5,"体育","一(6)",0],[5,6,"体育","一(2)",0]],
+"庄柔妍":[[1,1,"班队","一(7)",0],[1,5,"语文","一(7)",0],[2,2,"语文","一(7)",0],[2,3,"语文","一(7)",0],[3,1,"语文","一(7)",0],[3,4,"语文","一(7)",0],[4,1,"语文","一(7)",0],[4,2,"道法","一(7)",0],[5,3,"语文","一(7)",0],[5,6,"道法","一(7)",0]],
+"涂紫昕":[[1,3,"英语","一(6)",0],[2,3,"科学","一(4)",0],[2,6,"道法","一(2)",0],[3,1,"英语","一(6)",0],[3,6,"科学","一(6)",0],[4,3,"科学","一(6)",0]],
+"王剑飞":[[1,3,"体育","一(1)",0],[1,4,"体育","一(8)",0],[1,5,"体育","一(3)",0],[2,3,"体育","一(1)",0],[2,5,"体育","一(5)",0],[2,6,"体育","一(8)",0],[3,3,"体育","一(5)",0],[3,4,"体育","一(3)",0],[3,5,"体育","一(8)",0],[3,6,"体育","一(1)",0],[4,3,"体育","一(3)",0],[4,4,"体育","一(8)",0],[4,6,"体育","一(5)",0],[5,2,"体育","一(5)",0],[5,5,"体育","一(3)",0],[5,6,"体育","一(1)",0]],
+"江新瑜":[[1,2,"数学","四(7)",0],[1,5,"综合","四(7)",0],[2,4,"数学","四(7)",0],[3,3,"数学","四(7)",0],[4,3,"数学","四(7)",0],[4,4,"综合","一(3)",0],[5,1,"数学","四(7)",0],[5,6,"综合","一(5)",0]],
+"蒋炼":[[4,4,"综合","一(2)",0],[3,5,"综合","一(7)",0],[1,6,"综合","一(6)",0],[3,6,"综合","一(4)",0]],
+"李芳南":[[1,2,"体育","一(7)",2],[1,3,"体育","一(5)",2],[1,5,"体育","四(3)",2],[1,6,"体育","四(4)",2],[2,2,"体育","一(2)",2],[2,6,"体育","一(3)",2],[3,4,"体育","一(4)",2],[4,1,"体育","四(2)",2],[4,2,"体育","一(6)",2],[4,4,"体育","一(1)",2],[5,2,"体育","一(8)",2],[5,4,"体育","四(1)",2]],
+"汪慧":[[1,2,"综合","一(3)",0],[1,6,"科学","五(5)",0],[2,2,"英语","五(5)",0],[2,3,"英语","五(4)",0],[3,1,"英语","五(4)",0],[3,3,"英语","五(5)",0],[3,5,"体育","五(4)",0],[4,1,"英语","五(4)",0],[4,3,"综合","一(5)",0],[4,6,"体育","五(5)",0],[5,2,"英语","五(5)",0],[5,6,"科学","五(4)",0]],
+"林书昱":[[1,3,"体育","五(2)",0],[1,4,"体育","五(8)",0],[1,5,"科学","五(8)",0],[2,1,"英语","五(2)",0],[2,3,"英语","五(8)",0],[3,2,"英语","五(2)",0],[3,4,"综合","一(2)",0],[3,6,"英语","五(8)",0],[4,1,"英语","五(8)",0],[4,2,"英语","五(2)",0],[4,6,"综合","一(7)",0],[5,5,"科学","五(2)",0]]
+};
+/* 科组会（软冲突：不剔除，仅标注提醒） */
+var MEETINGS = [
+  {day:4, periods:[3,4], subj:"语文"},  /* 周四上午3、4节 */
+  {day:2, periods:[5,6], subj:"英语"},  /* 周二下午5、6节 */
+  {day:3, periods:[5,6], subj:"数学"}   /* 周三下午5、6节 */
+];
+function meetingFor(t, day, period){
+  for(var i=0;i<MEETINGS.length;i++){
+    var m = MEETINGS[i];
+    if(m.day===day && m.periods.indexOf(period)>=0){
+      var has = T[t].some(function(e){ return e[2]===m.subj; });
+      if(has) return m.subj + "科组会";
+    }
+  }
+  return null;
+}
+var PERIOD_TIME = {1:"8:45",2:"9:35",3:"10:30",4:"11:20",5:"14:25",6:"15:20"};
+var DAYS = ["周一","周二","周三","周四","周五"];
+
+/* 班级列表：一年级在前 */
+function allClasses(){
+  var set = {}, arr=[];
+  Object.keys(T).forEach(function(t){ T[t].forEach(function(e){ if(!set[e[3]]){set[e[3]]=1;arr.push(e[3]);} }); });
+  arr.sort(function(a,b){
+    function key(x){ return x.charCodeAt(0)*100 + parseInt(x.match(/\d+/)[0]); }
+    return key(a)-key(b);
+  });
+  return arr;
+}
+var CLASSES = allClasses().filter(function(c){ return c.charAt(0)==="一"; }); /* 输入项仅一年级，其他年级只用于判断忙闲 */
+
+var state = { cls:"一(8)", day:1, period:1, weekMode:0, date:todayStr() }; /* weekMode: 0按日期 1单 2双 */
+
+function todayStr(){
+  var n = new Date();
+  return n.getFullYear()+"-"+String(n.getMonth()+1).padStart(2,"0")+"-"+String(n.getDate()).padStart(2,"0");
+}
+/* 按规则：2026-09-01起为第1周（单周），每7天滚动轮换 */
+function weekInfoOfDate(ds){
+  var p = ds.split("-");
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var days = Math.floor((d - new Date(2026,8,1))/86400000);
+  if(days < 0) return { week:0, type:1 };
+  var wk = Math.floor(days/7)+1;
+  return { week: wk, type: (wk%2===1) ? 1 : 2 };
+}
+function curWeekType(){ return state.weekMode===0 ? weekInfoOfDate(state.date).type : state.weekMode; }
+function weekMatch(e,wt){ return e[4]===0 || e[4]===wt; }
+function weekLabel(w){ return w===1?"(单)":(w===2?"(双)":""); }
+
+function setWeek(m){
+  state.weekMode = m;
+  ["wAuto","wOdd","wEven"].forEach(function(id,i){
+    document.getElementById(id).className = ((i===0&&m===0)||(i===1&&m===1)||(i===2&&m===2)) ? "on" : "";
+  });
+  updateWeekTip(); render();
+}
+function updateWeekTip(){
+  var wt = curWeekType();
+  var p = state.date.split("-");
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var info = weekInfoOfDate(state.date);
+  var dow = d.getDay();
+  var dowTxt = ["周日","周一","周二","周三","周四","周五","周六"][dow];
+  var wkTxt = info.week===0 ? "开学前（按单周）" : "第"+info.week+"周";
+  document.getElementById("weekTip").innerHTML =
+    "📅 "+state.date+"（"+dowTxt+"） · "+wkTxt+" · 按<b>"+(wt===1?"单周":"双周")+"</b>计算"+(dow===0||dow===6?" ⚠️所选日期是周末":"");
+}
+
+function renderChips(){
+  var c = document.getElementById("clsChips"); c.innerHTML="";
+  CLASSES.forEach(function(cls){
+    var b = document.createElement("button");
+    b.className = "chip"+(cls===state.cls?" on":""); b.textContent = cls;
+    b.onclick = function(){ state.cls=cls; renderChips(); render(); };
+    c.appendChild(b);
+  });
+  var d = document.getElementById("dayChips"); d.innerHTML="";
+  DAYS.forEach(function(dn,i){
+    var b = document.createElement("button");
+    b.className = "chip"+(i+1===state.day?" on":""); b.textContent = dn;
+    b.onclick = function(){ state.day=i+1; renderChips(); render(); };
+    d.appendChild(b);
+  });
+  var p = document.getElementById("periodChips"); p.innerHTML="";
+  for(var i=1;i<=6;i++){
+    var b = document.createElement("button");
+    b.className = "chip"+(i===state.period?" on":"");
+    b.innerHTML = "第"+["一","二","三","四","五","六"][i-1]+"节<small>"+PERIOD_TIME[i]+"</small>";
+    b.onclick = function(k){ return function(){ state.period=k; renderChips(); render(); }; }(i);
+    p.appendChild(b);
+  }
+}
+
+function teachersOfClass(cls){
+  var set = {};
+  Object.keys(T).forEach(function(t){
+    T[t].forEach(function(e){ if(e[3]===cls) set[t]=1; });
+  });
+  return Object.keys(set);
+}
+function lessonAt(t, day, period, wt){
+  for(var i=0;i<T[t].length;i++){
+    var e=T[t][i];
+    if(e[0]===day && e[1]===period && weekMatch(e,wt)) return e;
+  }
+  return null;
+}
+function subjectsIn(cls, t){
+  var s={};
+  T[t].forEach(function(e){ if(e[3]===cls) s[e[2]]=1; });
+  return Object.keys(s).join("、");
+}
+
+function render(){
+  var wt = curWeekType();
+  var cls=state.cls, day=state.day, period=state.period;
+  var CN = ["一","二","三","四","五","六"];
+  /* 本班这节课：显示科目与任课老师（通用，面向所有老师） */
+  var who = [];
+  Object.keys(T).forEach(function(t){
+    var e = lessonAt(t,day,period,wt);
+    if(e && e[3]===cls) who.push({t:t,e:e});
+  });
+  var pTxt = DAYS[day-1]+' 第'+CN[period-1]+'节 '+PERIOD_TIME[period]+' · '+cls;
+  var html = '<div class="card"><h2>本班这节课</h2>';
+  if(who.length){
+    who.forEach(function(x){
+      html += '<div class="mylesson"><span class="tag">'+x.e[2]+weekLabel(x.e[4])+'</span><span class="info">'+pTxt+' · '+x.t+'</span></div>';
+    });
+  } else {
+    html += '<div class="empty">'+pTxt+'，本班暂无安排。</div>';
+  }
+  html += '</div>';
+
+  var ts = teachersOfClass(cls);
+  var ok=[];
+  ts.forEach(function(t){
+    var e = lessonAt(t,day,period,wt);
+    if(!e){ ok.push(t); }
+  });
+
+  html += '<div class="card"><h2>✅ 可以找他们换（本节没课）</h2>';
+  if(ok.length){
+    html += '<div class="ok-grid">';
+    ok.forEach(function(t){
+      var mt = meetingFor(t,day,period);
+      html += '<div class="ok-item" onclick="openSheet(\''+t+'\')"><div class="name">'+t+' ›</div><div class="subj">教本班：'+subjectsIn(cls,t)+'</div>';
+      if(mt) html += '<div class="mt">⚠️ 该时段可能有'+mt+'，建议先沟通确认</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  } else {
+    html += '<div class="empty">这个时段所有教本班的老师都有课。</div>';
+  }
+  html += '</div>';
+
+  document.getElementById("result").innerHTML = html;
+}
+
+function openSheet(t){
+  var wt = curWeekType();
+  document.getElementById("sheetName").textContent = t+" 的课表";
+  document.getElementById("sheetWeek").textContent = "当前按"+(wt===1?"单周":"双周")+"显示";
+  var rows = {};
+  T[t].forEach(function(e){
+    var k = e[0]+"-"+e[1];
+    if(!rows[k]) rows[k]=[];
+    rows[k].push(e);
+  });
+  var html = '<table class="tt"><tr><th style="width:15%"></th>';
+  DAYS.forEach(function(d){ html+='<th>'+d+'</th>'; });
+  html += '</tr>';
+  for(var p=1;p<=6;p++){
+    html += '<tr><td class="rowh">第'+["一","二","三","四","五","六"][p-1]+'<br>'+PERIOD_TIME[p]+'</td>';
+    for(var d=1;d<=5;d++){
+      var es = rows[d+"-"+p];
+      if(!es){ html+='<td></td>'; continue; }
+      var hasCur = es.some(function(e){ return weekMatch(e,wt); });
+      var cells = es.map(function(e){
+        return '<div class="s">'+e[2]+weekLabel(e[4])+'</div><div class="c">'+e[3]+'</div>';
+      }).join('');
+      html += '<td class="'+(hasCur?'cur':'off')+'">'+cells+'</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</table>';
+  document.getElementById("sheetTable").innerHTML = html;
+  document.getElementById("mask").classList.add("show");
+}
+function closeSheet(){ document.getElementById("mask").classList.remove("show"); }
+
+var datePick = document.getElementById("datePick");
+datePick.value = state.date;
+datePick.onchange = function(){
+  state.date = this.value || todayStr();
+  state.weekMode = 0; /* 回到按日期自动判断 */
+  ["wAuto","wOdd","wEven"].forEach(function(id,i){
+    document.getElementById(id).className = (i===0) ? "on" : "";
+  });
+  var p = state.date.split("-");
+  var d = new Date(+p[0], +p[1]-1, +p[2]);
+  var dow = d.getDay();
+  if(dow>=1 && dow<=5) state.day = dow; /* 自动联动到所选日期的星期 */
+  updateWeekTip(); renderChips(); render();
+};
+renderChips();
+updateWeekTip();
+render();
+</script>
+</body>
+</html>
