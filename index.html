@@ -8,7 +8,7 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="一年级换课助手">
 <meta property="og:description" content="怎么换？谁能换？一表速查">
-<meta property="og:image" content="share.png">
+<meta property="og:image" content="https://jtprimary-school.github.io/Jtprimary-school-huanke/share.png">
 <link rel="icon" type="image/png" href="share.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -63,8 +63,8 @@
 </style>
 </head>
 <body>
-  <!-- 微信分享卡片缩略图（不可见，仅供微信抓取） -->
-  <img src="share.png" alt="" style="position:absolute;left:-9999px;top:0;width:300px;height:300px;">
+  <!-- 微信分享卡片缩略图（移出屏外但保持真实渲染尺寸，供微信抓取第一张图） -->
+  <img src="share.png" width="300" height="300" alt="" style="position:fixed;top:-9999px;left:0;opacity:.01;">
   <div class="header">
     <h1>🔄 一年级换课小助手</h1>
     <div class="sub" id="weekTip"></div>
